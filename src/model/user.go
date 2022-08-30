@@ -17,14 +17,20 @@ type User struct {
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
-func (user User) Validate() error {
+func (user User) Validate(stage string) error {
 	v := reflect.ValueOf(user)
 
 	typeOfUser := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {
-		if strings.TrimSpace(fmt.Sprint(v.Field(i).Interface())) == "" {
+		if strings.TrimSpace(fmt.Sprint(v.Field(i).Interface())) == "" && typeOfUser.Field(i).Name != "Password" {
 			return errors.New(fmt.Sprintf("Field %s can not be empty", typeOfUser.Field(i).Name))
+		}
+	}
+
+	if stage == "create" {
+		if strings.TrimSpace(user.Password) == "" {
+			return errors.New(fmt.Sprintf("Field %s can not be empty", "password"))
 		}
 	}
 
