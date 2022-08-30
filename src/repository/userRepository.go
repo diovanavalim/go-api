@@ -125,3 +125,19 @@ func (repository Users) UpdateUser(id uint64, user model.User) error {
 
 	return nil
 }
+
+func (repository Users) DeleteUser(id uint64) error {
+	stmt, err := repository.db.Prepare("DELETE FROM users WHERE id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(id); err != nil {
+		return err
+	}
+
+	return nil
+}
