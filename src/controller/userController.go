@@ -4,43 +4,56 @@ import (
 	"api/src/database"
 	"api/src/model"
 	"api/src/repository"
+	"api/src/response"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	requestBody, err := ioutil.ReadAll(r.Body)
-
 	if err != nil {
-		log.Fatal(err)
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
 	var user model.User
 
 	if err = json.Unmarshal(requestBody, &user); err != nil {
-		log.Fatal(err)
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := user.Validate(); err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	} else {
+		user.Format()
 	}
 
 	db, err := database.Connect()
 	if err != nil {
-		log.Fatal(err)
+		response.Error(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	defer db.Close()
 
 	userRepository := repository.CreateUserRepository(db)
 
 	result, err := userRepository.CreateUser(user)
-
 	if err != nil {
-		log.Fatal(err)
+		response.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(fmt.Sprintf("User successfully inserted, ID: %d", result)))
+	response.JSON(w, http.StatusCreated, struct {
+		Message string `json:"message"`
+		UserID  uint64 `json:"user_id"`
+	}{
+		Message: "User successfully inserted",
+		UserID:  result,
+	})
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
