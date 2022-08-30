@@ -19,6 +19,12 @@ var UserRoutes = []Route{
 		Auth:   false,
 	},
 	{
+		URI:    "/user/query",
+		Method: http.MethodGet,
+		Func:   controller.GetUsersByNameOrNickname,
+		Auth:   false,
+	},
+	{
 		URI:    "/user/{id}",
 		Method: http.MethodGet,
 		Func:   controller.GetUserByID,
