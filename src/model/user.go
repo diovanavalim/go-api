@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/badoux/checkmail"
 )
 
 type User struct {
@@ -26,6 +28,10 @@ func (user User) Validate(stage string) error {
 		if strings.TrimSpace(fmt.Sprint(v.Field(i).Interface())) == "" && typeOfUser.Field(i).Name != "Password" {
 			return errors.New(fmt.Sprintf("Field %s can not be empty", typeOfUser.Field(i).Name))
 		}
+	}
+
+	if err := checkmail.ValidateFormat(user.Email); err != nil {
+		return errors.New("Invalid email format")
 	}
 
 	if stage == "create" {
