@@ -141,3 +141,26 @@ func (repository Users) DeleteUser(id uint64) error {
 
 	return nil
 }
+
+func (repository Users) GetUserByEmail(email string) (model.User, error) {
+	rows, err := repository.db.Query(
+		"SELECT id, name, nickname, email, password, createdAt FROM users WHERE email = ?",
+		email,
+	)
+
+	if err != nil {
+		return model.User{}, err
+	}
+
+	defer rows.Close()
+
+	var user model.User
+
+	if rows.Next() {
+		if err := rows.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email, &user.Password, &user.CreatedAt); err != nil {
+			return model.User{}, err
+		}
+	}
+
+	return user, nil
+}
