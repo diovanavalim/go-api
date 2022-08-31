@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"api/src/auth"
 	"api/src/database"
 	"api/src/model"
 	"api/src/repository"
@@ -49,11 +50,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userToken, _ := auth.CreateJSONWebToken(result.ID)
+
 	response.JSON(w, http.StatusOK, struct {
 		Message string `json:"message"`
 		Token   string `json:"token"`
 	}{
 		Message: "Successfully logged in",
-		Token:   "TODO",
+		Token:   userToken,
 	})
 }
