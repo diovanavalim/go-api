@@ -1,6 +1,7 @@
 package router
 
 import (
+	"api/src/middleware"
 	"api/src/router/routes"
 
 	"github.com/gorilla/mux"
@@ -18,7 +19,11 @@ func ConfigRouter(r *mux.Router) *mux.Router {
 	packageRoutes = append(packageRoutes, routes.LoginRoute)
 
 	for _, route := range packageRoutes {
-		r.HandleFunc(route.URI, route.Func).Methods(route.Method)
+		if route.Auth {
+			r.HandleFunc(route.URI, middleware.Logger(middleware.Authenticate(route.Func))).Methods(route.Method)
+		} else {
+			r.HandleFunc(route.URI, middleware.Logger(route.Func)).Methods(route.Method)
+		}
 	}
 
 	return r
