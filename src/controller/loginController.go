@@ -50,7 +50,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userToken, _ := auth.CreateJSONWebToken(result.ID)
+	userToken, err := auth.CreateJSONWebToken(result.ID)
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
 
 	response.JSON(w, http.StatusOK, struct {
 		Message string `json:"message"`
