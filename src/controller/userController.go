@@ -32,7 +32,10 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, err)
 		return
 	} else {
-		user.Format()
+		if err := user.Format("create"); err != nil {
+			response.Error(w, http.StatusInternalServerError, err)
+			return
+		}
 	}
 
 	db, err := database.Connect()
@@ -157,7 +160,10 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusBadRequest, err)
 		return
 	} else {
-		user.Format()
+		if err := user.Format("update"); err != nil {
+			response.Error(w, http.StatusInternalServerError, err)
+			return
+		}
 	}
 
 	db, err := database.Connect()
