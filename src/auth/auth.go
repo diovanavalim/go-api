@@ -3,7 +3,9 @@ package auth
 import (
 	"api/src/config"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,13 +25,11 @@ func CreateJSONWebToken(id uint64) (string, error) {
 }
 
 func ValidateJSONWebToken(r *http.Request) error {
-	authorization := r.Header.Get("Authorization")
+	tokenString, err := ExtractToken(r)
 
-	if len(strings.Split(authorization, " ")) != 2 {
-		return errors.New("Malformed token")
+	if err != nil {
+		return err
 	}
-
-	tokenString := strings.Split(authorization, " ")[1]
 
 	token, err := jwt.Parse(tokenString, GetVerifySecret)
 
@@ -42,6 +42,41 @@ func ValidateJSONWebToken(r *http.Request) error {
 	}
 
 	return errors.New("Could not validate JWT token")
+}
+
+func ExtractUserID(r *http.Request) (uint64, error) {
+	tokenString, err := ExtractToken(r)
+
+	if err != nil {
+		return 0, err
+	}
+
+	token, err := jwt.Parse(tokenString, GetVerifySecret)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if permissions, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID, err := strconv.ParseUint(fmt.Sprintf("%0.f", permissions["userId"]), 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		return userID, nil
+	}
+
+	return 0, errors.New("Could not validate JWT token")
+}
+
+func ExtractToken(r *http.Request) (string, error) {
+	authorization := r.Header.Get("Authorization")
+
+	if len(strings.Split(authorization, " ")) != 2 {
+		return "", errors.New("Malformed token")
+	}
+
+	return strings.Split(authorization, " ")[1], nil
 }
 
 func GetVerifySecret(token *jwt.Token) (interface{}, error) {
