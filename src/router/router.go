@@ -13,9 +13,11 @@ func CreateRouter() *mux.Router {
 }
 
 func ConfigRouter(r *mux.Router) *mux.Router {
-	routes := routes.UserRoutes
+	packageRoutes := routes.UserRoutes
 
-	for _, route := range routes {
+	packageRoutes = append(packageRoutes, routes.LoginRoute)
+
+	for _, route := range packageRoutes {
 		r.HandleFunc(route.URI, route.Func).Methods(route.Method)
 	}
 
