@@ -1,11 +1,13 @@
 package controller
 
 import (
+	"api/src/auth"
 	"api/src/database"
 	"api/src/model"
 	"api/src/repository"
 	"api/src/response"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -142,6 +144,18 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	requestUserID, err := auth.ExtractUserID(r)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if requestUserID != userId {
+		response.Error(w, http.StatusForbidden, errors.New("Request user's ID does not match user ID query param"))
+		return
+	}
+
 	requestBody, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -190,18 +204,33 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	requestUserID, err := auth.ExtractUserID(r)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if requestUserID != userId {
+		response.Error(w, http.StatusForbidden, errors.New("Request user's ID does not match user ID query param"))
+		return
 	}
 
 	db, err := database.Connect()
 
 	if err != nil {
 		response.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	userRepository := repository.CreateUserRepository(db)
 
 	if err = userRepository.DeleteUser(userId); err != nil {
 		response.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	response.JSON(w, http.StatusNoContent, nil)
