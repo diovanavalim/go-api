@@ -164,3 +164,84 @@ func (repository Users) GetUserByEmail(email string) (model.User, error) {
 
 	return user, nil
 }
+
+func (repository Users) FollowUser(user_id, follower_id uint64) error {
+	stmt, err := repository.db.Prepare("INSERT IGNORE INTO followers (user_id, follower_id) VALUES (?, ?)")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(user_id, follower_id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository Users) UnfollowUser(user_id, follower_id uint64) error {
+	stmt, err := repository.db.Prepare("DELETE FROM followers WHERE user_id = ? AND follower_id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(user_id, follower_id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository Users) GetUserFollowers(user_id uint64) ([]model.User, error) {
+	rows, err := repository.db.Query(
+		"SELECT u.id, u.name, u.nickname, u.email FROM followers as f JOIN users as u ON f.follower_id = u.id WHERE f.user_id = ?", user_id,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var users []model.User
+
+	for rows.Next() {
+		var user model.User
+
+		if err = rows.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+func (repository Users) GetUserFollowing(user_id uint64) ([]model.User, error) {
+	rows, err := repository.db.Query(
+		"SELECT u.id, u.name, u.nickname, u.email FROM followers as f JOIN users as u ON f.user_id = u.id WHERE f.follower_id = ?",
+		user_id,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var users []model.User
+
+	for rows.Next() {
+		var user model.User
+
+		if err = rows.Scan(&user.ID, &user.Name, &user.Nickname, &user.Email); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
