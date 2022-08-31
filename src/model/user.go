@@ -1,6 +1,7 @@
 package model
 
 import (
+	"api/src/util"
 	"errors"
 	"fmt"
 	"reflect"
@@ -43,8 +44,20 @@ func (user User) Validate(stage string) error {
 	return nil
 }
 
-func (user *User) Format() {
+func (user *User) Format(stage string) error {
 	user.Name = strings.TrimSpace(user.Name)
 	user.Email = strings.TrimSpace(user.Email)
 	user.Nickname = strings.TrimSpace(user.Nickname)
+
+	if stage == "create" {
+		hashPassword, err := util.Hash(user.Password)
+
+		if err != nil {
+			return errors.New("Could not hash user's password")
+		}
+
+		user.Password = string(hashPassword)
+	}
+
+	return nil
 }
