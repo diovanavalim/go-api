@@ -9,6 +9,9 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +52,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	defer db.Close()
 
-	postRepository := repository.CreateRepository(db)
+	postRepository := repository.CreatePostRepository(db)
 
 	result, err := postRepository.CreatePost(post, userId)
 
@@ -68,7 +71,36 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {}
 
-func GetPost(w http.ResponseWriter, r *http.Request) {}
+func GetPost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	postId, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	postRepository := repository.CreatePostRepository(db)
+
+	result, err := postRepository.GetPost(postId)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, result)
+}
 
 func UpdatePost(w http.ResponseWriter, r *http.Request) {}
 
