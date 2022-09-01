@@ -26,10 +26,12 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = post.Validate("create"); err != nil {
+	if err = post.Validate(); err != nil {
 		response.Error(w, http.StatusBadRequest, err)
 		return
 	}
+
+	post.Format()
 
 	userId, err := auth.ExtractUserID(r)
 

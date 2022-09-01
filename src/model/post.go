@@ -17,7 +17,7 @@ type Post struct {
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
-func (post Post) Validate(stage string) error {
+func (post Post) Validate() error {
 	v := reflect.ValueOf(post)
 
 	typeOfPost := v.Type()
@@ -29,4 +29,9 @@ func (post Post) Validate(stage string) error {
 	}
 
 	return nil
+}
+
+func (post *Post) Format() {
+	post.Title = strings.TrimSpace(post.Title)
+	post.Content = strings.TrimSpace(post.Content)
 }
