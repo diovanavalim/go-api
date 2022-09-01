@@ -38,8 +38,43 @@ func (repository Posts) CreatePost(post model.Post, authorId uint64) (uint64, er
 	return uint64(lastInsertedId), nil
 }
 
-func (repository Posts) GetPosts(userId uint64) ([]model.Post, error) {
-	return nil, nil
+func (repository Posts) GetPosts(userId uint64) ([]dto.PostDto, error) {
+	rows, err := repository.db.Query(`SELECT DISTINCT
+    				p.*, u.nickname FROM posts p
+        			INNER JOIN
+    				users u ON u.id = p.author_id
+        			LEFT JOIN
+    				followers f ON p.author_id = f.user_id
+					WHERE u.id = ? OR f.follower_id = ?
+					ORDER BY 1 DESC;`, userId, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var posts []dto.PostDto
+
+	for rows.Next() {
+		var post dto.PostDto
+
+		if err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Content,
+			&post.AuthorID,
+			&post.Likes,
+			&post.CreatedAt,
+			&post.AuthorNickname,
+		); err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }
 
 func (repository Posts) GetPost(id uint64) (dto.PostDto, error) {

@@ -69,7 +69,32 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetPosts(w http.ResponseWriter, r *http.Request) {}
+func GetPosts(w http.ResponseWriter, r *http.Request) {
+	userID, err := auth.ExtractUserID(r)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	postRepository := repository.CreatePostRepository(db)
+
+	result, err := postRepository.GetPosts(userID)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, result)
+}
 
 func GetPost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
