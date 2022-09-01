@@ -165,7 +165,7 @@ func (repository Users) GetUserByEmail(email string) (model.User, error) {
 	return user, nil
 }
 
-func (repository Users) FollowUser(user_id, follower_id uint64) error {
+func (repository Users) FollowUser(userId, followerId uint64) error {
 	stmt, err := repository.db.Prepare("INSERT IGNORE INTO followers (user_id, follower_id) VALUES (?, ?)")
 
 	if err != nil {
@@ -174,14 +174,14 @@ func (repository Users) FollowUser(user_id, follower_id uint64) error {
 
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(user_id, follower_id); err != nil {
+	if _, err := stmt.Exec(userId, followerId); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (repository Users) UnfollowUser(user_id, follower_id uint64) error {
+func (repository Users) UnfollowUser(userId, followerId uint64) error {
 	stmt, err := repository.db.Prepare("DELETE FROM followers WHERE user_id = ? AND follower_id = ?")
 
 	if err != nil {
@@ -190,16 +190,17 @@ func (repository Users) UnfollowUser(user_id, follower_id uint64) error {
 
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(user_id, follower_id); err != nil {
+	if _, err := stmt.Exec(userId, followerId); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (repository Users) GetUserFollowers(user_id uint64) ([]model.User, error) {
+func (repository Users) GetUserFollowers(userId uint64) ([]model.User, error) {
 	rows, err := repository.db.Query(
-		"SELECT u.id, u.name, u.nickname, u.email FROM followers as f JOIN users as u ON f.follower_id = u.id WHERE f.user_id = ?", user_id,
+		"SELECT u.id, u.name, u.nickname, u.email FROM followers as f JOIN users as u ON f.follower_id = u.id WHERE f.user_id = ?",
+		userId,
 	)
 
 	if err != nil {
@@ -221,10 +222,10 @@ func (repository Users) GetUserFollowers(user_id uint64) ([]model.User, error) {
 	return users, nil
 }
 
-func (repository Users) GetUserFollowing(user_id uint64) ([]model.User, error) {
+func (repository Users) GetUserFollowing(userId uint64) ([]model.User, error) {
 	rows, err := repository.db.Query(
 		"SELECT u.id, u.name, u.nickname, u.email FROM followers as f JOIN users as u ON f.user_id = u.id WHERE f.follower_id = ?",
-		user_id,
+		userId,
 	)
 
 	if err != nil {
@@ -244,4 +245,40 @@ func (repository Users) GetUserFollowing(user_id uint64) ([]model.User, error) {
 	}
 
 	return users, nil
+}
+
+func (repository Users) UpdatePassword(passwordHash string, userId uint64) error {
+	stmt, err := repository.db.Prepare("UPDATE users SET password = ? WHERE id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(passwordHash, userId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repository Users) GetUserPasswordHash(id uint64) (string, error) {
+	rows, err := repository.db.Query("SELECT password FROM users WHERE id = ?", id)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer rows.Close()
+
+	var user model.User
+
+	if rows.Next() {
+		if err = rows.Scan(&user.Password); err != nil {
+			return "", err
+		}
+	}
+
+	return user.Password, nil
 }

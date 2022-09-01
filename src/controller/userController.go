@@ -6,6 +6,7 @@ import (
 	"api/src/model"
 	"api/src/repository"
 	"api/src/response"
+	"api/src/util"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -379,4 +380,75 @@ func GetUserFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, result)
+}
+
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	tokenUserID, err := auth.ExtractUserID(r)
+
+	if userID != tokenUserID {
+		response.Error(w, http.StatusForbidden, errors.New("You can not update another user password"))
+		return
+	}
+
+	requestBody, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var resetPassword model.ResetPassword
+
+	if err = json.Unmarshal(requestBody, &resetPassword); err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	userRepository := repository.CreateUserRepository(db)
+
+	currentPasswordHash, err := userRepository.GetUserPasswordHash(userID)
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = util.CompareHash(currentPasswordHash, resetPassword.CurrentPassword); err != nil {
+		response.Error(w, http.StatusForbidden, err)
+		return
+	}
+
+	newPasswordHash, err := util.Hash(resetPassword.NewPassword)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	err = userRepository.UpdatePassword(string(newPasswordHash), userID)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
 }
