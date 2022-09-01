@@ -17,6 +17,7 @@ func ConfigRouter(r *mux.Router) *mux.Router {
 	packageRoutes := routes.UserRoutes
 
 	packageRoutes = append(packageRoutes, routes.LoginRoute)
+	packageRoutes = append(packageRoutes, routes.PostRoutes...)
 
 	for _, route := range packageRoutes {
 		if route.Auth {
