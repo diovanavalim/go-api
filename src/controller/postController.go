@@ -67,7 +67,6 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	}{
 		PostID: result,
 	})
-
 }
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +127,72 @@ func GetPost(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, result)
 }
 
-func UpdatePost(w http.ResponseWriter, r *http.Request) {}
+func UpdatePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	postID, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	userID, err := auth.ExtractUserID(r)
+
+	if err != nil {
+		response.Error(w, http.StatusForbidden, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	postRepository := repository.CreatePostRepository(db)
+
+	post, err := postRepository.GetPost(postID)
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if post.AuthorID != userID {
+		response.Error(w, http.StatusForbidden, errors.New("User shall not update a post that does not belongs to him"))
+		return
+	}
+
+	requestBody, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var newPost model.Post
+
+	if err = json.Unmarshal(requestBody, &newPost); err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	if err = newPost.Validate(); err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = postRepository.UpdatePost(postID, newPost); err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
+}
 
 func DeletePost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)

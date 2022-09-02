@@ -106,7 +106,19 @@ func (repository Posts) GetPost(id uint64) (dto.PostDto, error) {
 	return post, nil
 }
 
-func (repository Posts) UpdatePost(id uint64) error {
+func (repository Posts) UpdatePost(id uint64, post model.Post) error {
+	stmt, err := repository.db.Prepare("UPDATE posts SET title = ?, content = ? WHERE id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(post.Title, post.Content, id); err != nil {
+		return err
+	}
+
 	return nil
 }
 
