@@ -171,9 +171,33 @@ func (repository Posts) GetUserPosts(id uint64) ([]dto.PostDto, error) {
 }
 
 func (repository Posts) LikePost(id uint64) error {
+	stmt, err := repository.db.Prepare("UPDATE posts SET likes = likes + 1 WHERE id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(id); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (repository Posts) UnlikePost(id uint64) error {
+	stmt, err := repository.db.Prepare("UPDATE posts SET likes = likes - 1 WHERE id = ?")
+
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(id); err != nil {
+		return err
+	}
+
 	return nil
 }

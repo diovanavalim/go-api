@@ -273,6 +273,60 @@ func GetUserPosts(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, result)
 }
 
-func LikePost(w http.ResponseWriter, r *http.Request) {}
+func LikePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
-func UnlikePost(w http.ResponseWriter, r *http.Request) {}
+	postID, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	postRepository := repository.CreatePostRepository(db)
+
+	if err = postRepository.LikePost(postID); err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
+}
+
+func UnlikePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	postID, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	postRepository := repository.CreatePostRepository(db)
+
+	if err = postRepository.UnlikePost(postID); err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
+}
