@@ -241,3 +241,38 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusNoContent, nil)
 }
+
+func GetUserPosts(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	userID, err := strconv.ParseUint(params["id"], 10, 64)
+
+	if err != nil {
+		response.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	db, err := database.Connect()
+
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	defer db.Close()
+
+	postRepository := repository.CreatePostRepository(db)
+
+	result, err := postRepository.GetUserPosts(userID)
+
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, result)
+}
+
+func LikePost(w http.ResponseWriter, r *http.Request) {}
+
+func UnlikePost(w http.ResponseWriter, r *http.Request) {}

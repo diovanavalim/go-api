@@ -137,3 +137,43 @@ func (repository Posts) DeletePost(id uint64) error {
 
 	return nil
 }
+
+func (repository Posts) GetUserPosts(id uint64) ([]dto.PostDto, error) {
+	rows, err := repository.db.Query(
+		"SELECT p.*, u.nickname from posts as p INNER JOIN users as u ON p.author_id = u.id WHERE p.author_id = ?", id,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var posts []dto.PostDto
+
+	for rows.Next() {
+		var post dto.PostDto
+
+		if err := rows.Scan(
+			&post.ID,
+			&post.Title,
+			&post.Content,
+			&post.AuthorID,
+			&post.Likes,
+			&post.CreatedAt,
+			&post.AuthorNickname,
+		); err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
+
+func (repository Posts) LikePost(id uint64) error {
+	return nil
+}
+
+func (repository Posts) UnlikePost(id uint64) error {
+	return nil
+}
